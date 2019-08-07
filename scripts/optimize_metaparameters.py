@@ -364,8 +364,19 @@ def GetObjfAndDeriv(x):
 
     # check that x == x2, we just changed variables back and forth so it should
     # be the same.
-    if math.sqrt(np.dot(x - x2, x - x2)) > 0.001:
+
+    roundoff_error = math.sqrt(np.dot(x - x2, x - x2))
+
+    if roundoff_error > 0.001:
         print("optimize_metaparameters.py: warning: difference {0} versus {1}\n".format(x, x2))
+
+    # roundoff_error can become nonzero when the 'unconstrained-space'
+    # parameters get large enough that the actual discounting parameters become
+    # close to identical to machine precision.  This is dangerous and can cause
+    # validation failures.  We penalize the objective to stop the optimization
+    # from reaching the place wher discounting parameters are identical to
+    # machine precision, which could cause validation failures.
+    objf -= roundoff_error
 
     print("Evaluation %d: objf=%.6f, deriv-magnitude=%.6f " %
           (iteration, objf, math.sqrt(np.vdot(df_dx, df_dx))),
